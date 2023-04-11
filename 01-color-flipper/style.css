@@ -1,0 +1,58 @@
+:root {
+  --main-color: #f1f5f8;
+  --sub-color: #000;
+}
+
+body {
+  margin: 0;
+  background-color: var(--main-color);
+}
+header {
+  background-color: white;
+  height: 80px;
+  line-height: 80px;
+  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
+}
+header h1 {
+  font-weight: bold;
+  font-size: 24px;
+  color: #49a6e9;
+  margin: 0;
+  padding-left: 50px;
+}
+
+main {
+  height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+p {
+  border-radius: 20px;
+  padding: 20px 30px;
+  font-weight: bold;
+  background-color: black;
+  color: white;
+  font-size: 30px;
+}
+
+#bg-color {
+  color: #49a6e9;
+}
+
+button {
+  background-color: transparent;
+  border: 1px solid var(--sub-color);
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 24px;
+  transition: 0.3s;
+  color: var(--sub-color);
+}
+
+button:hover {
+  background-color: black;
+  color: white;
+}
