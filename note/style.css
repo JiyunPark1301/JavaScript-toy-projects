@@ -60,7 +60,7 @@ header {
 }
 
 .main-cover {
-  width: 300px;
+  width: 200px;
   /* width: 600px; */
 }
 
@@ -76,8 +76,6 @@ header {
 
 main {
   background-color: #f3deba;
-  /* min-height: calc(100vh - 59px - 442px); */
-  /* min-height: 500px; */
   padding: 50px 0;
 }
 
@@ -95,7 +93,8 @@ main {
   font-size: 14px;
 }
 
-.notes-section {
+.notes-section + .notes-section {
+  margin-top: 60px;
 }
 
 .notes-section h2 {
@@ -113,6 +112,7 @@ main {
   flex-basis: 25%;
   padding: 0 15px;
   box-sizing: border-box;
+  /* background-color: transparent; */
 }
 
 .note {
@@ -260,11 +260,6 @@ textarea:focus {
   border: 1px solid #ccc;
 }
 
-/* .modal-footer-left button:hover {
-  background-color: #ccc;
-  color: #fff;
-} */
-
 .color-select {
   position: relative;
 }
@@ -296,4 +291,34 @@ textarea:focus {
   padding: 8px 15px;
   border-radius: 0 8px 0 0;
   font-size: 18px;
+}
+
+@media screen and (max-width: 1050px) {
+  .note-item {
+    flex-basis: 33.333333%;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .note-item {
+    flex-basis: 50%;
+  }
+  .modal {
+    width: 450px;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .modal {
+    width: 330px;
+  }
+}
+
+@media screen and (max-width: 414px) {
+  .note-item {
+    flex-basis: 100%;
+  }
+  .modal {
+    width: 280px;
+  }
 }
