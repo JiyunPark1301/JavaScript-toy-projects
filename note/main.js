@@ -1,177 +1,121 @@
-const $ = (selector) => document.querySelector(selector);
-const $$ = (selector) => document.querySelectorAll(selector);
+// * 모달 여는 버튼
+const openModalBtn = document.querySelector('.add-note-btn');
+// * 모달 바깥 검정 영역
+const modalOverlay = document.querySelector('.modal-overlay');
+// * 모달
+const modal = document.querySelector('.modal');
+// * 모달 닫는 버튼
+const closeModalBtn = modal.querySelector('.modal-close');
+// * 모달 내 노트 추가 버튼
+const addNoteBtn = modal.querySelector('.modal-add');
+// * 모달 내 제목입력창
+const titleInput = modal.querySelector('.note-title-input');
+// * 모달 내 내용입력창
+const contentInput = modal.querySelector('.note-content-input');
+// * 모달 내 핀버튼
+const modalPinBtn = modal.querySelector('.pin');
+// * 모달 내 컬러픽커 버튼
+const modalColorBtn = modal.querySelector('.color-select');
+// * 모달 내 삭제 버튼
+const modalDeleteBtn = modal.querySelector('.delete');
+// * 핀노트, 노트 목록
+const noteLists = document.querySelectorAll('.note-container');
+// * 핀된 노트가 0개임을 알려주는 메세지
+const zeroPinnedMessage = document.querySelector('.zeroPinnedMessage');
+// * 노트가 0개임을 알려주는 메세지
+const zeroNoteMessage = document.querySelector('.zeroNoteMessage');
 
-const openModalBtn = $('.add-note-btn');
-const modalOverlay = $('.modal-overlay');
-const closeModalBtn = $('.modal-close');
-const modal = $('.modal');
-const titleInput = $('.note-title-input');
-const contentInput = $('.note-content-input');
-const addNoteBtn = $('.modal-add');
-const modalPinBtn = $('.modal-footer-left .pin');
-const modalColorBtn = $('.modal-footer-left .color-select');
-const modalDeleteBtn = $('.modal-footer-left .delete');
-const noteLists = $$('.note-container');
-const wrapper = $('.wrapper');
-const zeroPinnedMessage = $('.zeroPinnedMessage');
-const zeroNoteMessage = $('.zeroNoteMessage');
-
-let bgColor = '#fff';
-let isPinned = false;
-let isEditMode = false;
-let picked = null;
-let pickedIndex = null;
 let notes;
+let isEditMode = false;
+let currentBgColor = '#fff';
+let isPinned = false;
+let currentId = null;
 
-// 모달창 열기
-const openModal = (id) => {
-  // 수정모드라면 삭제버튼이 존재, 버튼의 text가 수정
+// ? 추가모드와 수정모드일 때 모달 UI 변경
+const changeUIInModal = () => {
   if (isEditMode) {
     modalDeleteBtn.classList.remove('hidden');
     addNoteBtn.textContent = '수정';
-
-    // ? 모달창을 통해서 수정이나 삭제를 하는 경우를 대비
-    addNoteBtn.dataset.id = id;
-    modalDeleteBtn.dataset.id = id;
-    // modalPinBtn.dataset.id = id;
-
-    const index = notes.findIndex((note) => note.id === id);
-    titleInput.value = notes[index].title;
-    contentInput.value = notes[index].content;
-    bgColor = notes[index].bgColor;
-    modalColorBtn.style.backgroundColor = bgColor;
-    if (notes[index].pinned) modalPinBtn.classList.add('black');
-    else modalPinBtn.classList.remove('black');
   } else {
-    // 추가모드라면 삭제버튼이 존재X, 버튼의 text가 추가
     modalDeleteBtn.classList.add('hidden');
     addNoteBtn.textContent = '추가';
   }
+};
+
+// ? 모드 변경(추가 or 수정)
+const changeMode = (value) => {
+  isEditMode = Boolean(value);
+};
+
+// ? 현재 선택한 노트가 무엇인지 알기 위해 id설정
+const setId = (noteId) => {
+  currentId = noteId;
+};
+
+// ? 모달에 선택한 노트 데이터 가져오기
+const getDataToModal = () => {
+  const index = notes.findIndex((note) => note.id === currentId);
+  const { title, content, pinned, bgColor } = notes[index];
+
+  setInputsInModal(title, content);
+  setPinnedInModal(pinned);
+  setBgColorInModal(bgColor);
+};
+
+// ? 모달 열기
+const openModal = () => {
+  changeUIInModal();
   modalOverlay.classList.remove('hidden');
 };
 
-const makeIsPinnedFalse = () => {
-  isPinned = false;
-  modalPinBtn.classList.remove('black');
-};
-
-const makeIsPinnedTrue = () => {
-  isPinned = true;
-  modalPinBtn.classList.add('black');
-};
-
-// 모달창 닫기
+// ? 모달 닫기
 const closeModal = () => {
-  // modalPinBtn.removeAttribute('data-id');
   modalOverlay.classList.add('hidden');
-  titleInput.value = '';
-  contentInput.value = '';
-  makeIsPinnedFalse();
-  bgColor = '#fff';
-  modalColorBtn.style.backgroundColor = bgColor;
+  setInputsInModal('', '');
+  setPinnedInModal(false);
+  setBgColorInModal('#fff');
 };
 
-const addNote = () => {
-  if (titleInput.value.trim() === '' || contentInput.value.trim() === '')
-    return alert('제목이나 내용을 적어주세요');
-
-  const note = {
-    id: Date.now().toString(),
-    title: titleInput.value,
-    content: contentInput.value,
-    pinned: isPinned,
-    bgColor,
-  };
-
-  notes.push(note);
-  checkNumOfLists();
-  localStorage.setItem('notes', JSON.stringify(notes));
-
-  renderNote(note);
-  closeModal();
-};
-
-const renderEditedNote = (id, title, content) => {
-  const note = $(`article[data-id='${id}']`);
-  note.querySelector('.note-title').innerText = title;
-  note.querySelector('.note-content').innerText = content;
-};
-
-const renderPinnedNote = (id, index) => {
-  const pinBtn = $(`article[data-id='${id}'] .pin`);
-  const li = pinBtn.closest('.note-item');
-  li.remove();
-  if (notes[index].pinned) {
-    noteLists[0].append(li);
-    pinBtn.classList.add('black');
+// ? 모달에서 핀 상태 토글
+const togglePinBtnInModal = () => {
+  if (modalPinBtn.classList.contains('black')) {
+    setPinnedInModal(false);
   } else {
-    noteLists[1].append(li);
-    pinBtn.classList.remove('black');
+    setPinnedInModal(true);
   }
 };
 
-const renderColoredNote = (id) => {
-  const div = $(`article[data-id='${id}'] .note-top`);
-  div.style.backgroundColor = bgColor;
+// ? 모달 내 핀 상태 변경
+const setPinnedInModal = (value) => {
+  isPinned = Boolean(value);
+
+  if (isPinned) {
+    modalPinBtn.classList.add('black');
+  } else {
+    modalPinBtn.classList.remove('black');
+  }
 };
 
-const editNote = (e) => {
-  if (titleInput.value.trim() === '' || contentInput.value.trim() === '')
-    return alert('제목이나 내용을 적어주세요');
-  const id = e.target.dataset.id;
-  e.target.removeAttribute('data-id');
-  const index = notes.findIndex((note) => note.id === id);
-  notes[index].title = titleInput.value;
-  notes[index].content = contentInput.value;
-  notes[index].bgColor = bgColor;
-
-  if (modalPinBtn.classList.contains('black') && !notes[index].pinned) {
-    notes[index].pinned = true;
-    renderPinnedNote(id, index);
-  }
-  if (!modalPinBtn.classList.contains('black') && notes[index].pinned) {
-    notes[index].pinned = false;
-    renderPinnedNote(id, index);
-  }
-
-  renderEditedNote(id, titleInput.value, contentInput.value);
-  renderColoredNote(id);
-  notes = changeOrderOfNotes(notes);
-  localStorage.setItem('notes', JSON.stringify(notes));
-  checkNumOfLists();
-
-  closeModal();
+// ? 모달 내 색상 변경
+const setBgColorInModal = (value) => {
+  currentBgColor = value;
+  modalColorBtn.style.backgroundColor = currentBgColor;
 };
 
-const deleteNote = (e, id) => {
-  if (!confirm('정말 삭제하시겠습니까?')) return;
-  // 모달창을 통해 삭제하는 경우
-  if (!id) {
-    id = modalDeleteBtn.dataset.id;
-    modalDeleteBtn.removeAttribute('data-id');
-  }
-  /////////////////////
-  const index = notes.findIndex((note) => note.id === id);
-  notes.splice(index, 1);
-  checkNumOfLists();
-  localStorage.setItem('notes', JSON.stringify(notes));
-  let li = e.target.closest('.note-item');
-  // 모달창을 통해 삭제하는 경우
-  if (!li) {
-    li = $(`article[data-id='${id}']`).closest('.note-item');
-
-    closeModal();
-  }
-  /////////////////////
-  li.remove();
+// ? 모달 내 입력창 변경
+const setInputsInModal = (title, content) => {
+  titleInput.value = title;
+  contentInput.value = content;
 };
 
-const checkNumOfLists = () => {
+// ? 핀노트, 노트 개수 확인 -> 메세지 숨김 처리
+const checkNumOfNotes = () => {
   if (notes.filter((note) => note.pinned).length === 0) {
     zeroPinnedMessage.classList.remove('hidden');
   } else {
     zeroPinnedMessage.classList.add('hidden');
   }
+
   if (notes.filter((note) => !note.pinned).length === 0) {
     zeroNoteMessage.classList.remove('hidden');
   } else {
@@ -179,6 +123,7 @@ const checkNumOfLists = () => {
   }
 };
 
+// ? 현재 상태의 순서를 로컬 스토리지에 저장하기 위함
 const changeOrderOfNotes = () => {
   const pinnedList = [...noteLists[0].children].map(
     (li) => li.firstElementChild.dataset.id
@@ -190,41 +135,7 @@ const changeOrderOfNotes = () => {
   return idList.map((id) => notes.find((note) => note.id === id));
 };
 
-const pinNote = (pinBtn, id) => {
-  const index = notes.findIndex((note) => note.id === id);
-  notes[index].pinned = notes[index].pinned ? false : true;
-
-  const li = pinBtn.closest('.note-item');
-  li.remove();
-  if (notes[index].pinned) {
-    noteLists[0].append(li);
-    pinBtn.classList.add('black');
-  } else {
-    noteLists[1].append(li);
-    pinBtn.classList.remove('black');
-  }
-  notes = changeOrderOfNotes();
-  localStorage.setItem('notes', JSON.stringify(notes));
-  checkNumOfLists();
-};
-
-const pinNoteByModal = (type) => {
-  if (type === 'new') {
-    isPinned ? makeIsPinnedFalse() : makeIsPinnedTrue();
-    return;
-  }
-  modalPinBtn.classList.toggle('black');
-};
-
-const changeBgColor = (note, bgBtn, id) => {
-  const index = notes.findIndex((note) => note.id === id);
-  const color = bgBtn.firstElementChild.value;
-
-  notes[index].bgColor = color;
-  localStorage.setItem('notes', JSON.stringify(notes));
-  note.querySelector('.note-top').style.backgroundColor = color;
-};
-
+// ? 새 노트 그려줌
 const renderNote = (note) => {
   const { id, title, content, pinned, bgColor } = note;
   const li = document.createElement('li');
@@ -258,83 +169,204 @@ const renderNote = (note) => {
   div.append(h3, p);
   article.append(div, footer);
   li.append(article);
+
   pinned ? noteLists[0].append(li) : noteLists[1].append(li);
   div.style.backgroundColor = bgColor;
 };
 
+// ? 모달 내 입력창 유효성 검사
+const checkValidityOfInputs = () => {
+  if (titleInput.value.trim() === '' || contentInput.value.trim() === '') {
+    alert('제목이나 내용을 적어주세요');
+    return false;
+  }
+  return true;
+};
+
+// ? 새 노트 추가
+const addNote = () => {
+  const title = titleInput.value;
+  const content = contentInput.value;
+
+  const newNote = {
+    id: Date.now().toString(),
+    title,
+    content,
+    pinned: isPinned,
+    bgColor: currentBgColor,
+  };
+
+  notes.push(newNote);
+  localStorage.setItem('notes', JSON.stringify(notes));
+
+  closeModal();
+  renderNote(newNote);
+  checkNumOfNotes();
+};
+
+// ? 수정된 제목, 내용 렌더링
+const renderEditedNote = (title, content) => {
+  const note = document.querySelector(`article[data-id='${currentId}']`);
+  note.querySelector('.note-title').innerText = title;
+  note.querySelector('.note-content').innerText = content;
+};
+
+// ? 수정된 핀 상태 렌더링
+const renderEditedPin = () => {
+  const pinBtn = document.querySelector(`article[data-id='${currentId}'] .pin`);
+  const li = pinBtn.closest('.note-item');
+  li.remove();
+  if (isPinned) {
+    noteLists[0].append(li);
+    pinBtn.classList.add('black');
+  } else {
+    noteLists[1].append(li);
+    pinBtn.classList.remove('black');
+  }
+};
+
+// ? 수정된 배경색 렌더링
+const renderEditedColor = () => {
+  const div = document.querySelector(
+    `article[data-id='${currentId}'] .note-top`
+  );
+  div.style.backgroundColor = currentBgColor;
+};
+
+// ? 노트 수정
+const editNote = () => {
+  const title = titleInput.value;
+  const content = contentInput.value;
+
+  const index = notes.findIndex((note) => note.id === currentId);
+  notes[index].title = title;
+  notes[index].content = content;
+  notes[index].bgColor = currentBgColor;
+  notes[index].pinned = isPinned;
+
+  renderEditedNote(title, content);
+  renderEditedColor();
+  renderEditedPin();
+
+  notes = changeOrderOfNotes();
+  localStorage.setItem('notes', JSON.stringify(notes));
+
+  closeModal();
+  checkNumOfNotes();
+};
+
+// ? 노트 삭제 할 것인지 확인
+const confirmDeletionOfNote = () => {
+  if (confirm('정말 삭제하시겠습니까?')) return true;
+  return false;
+};
+
+// ? 삭제된 노트 렌더링
+const renderRemainedNotes = () => {
+  const li = document.querySelector(
+    `article[data-id='${currentId}']`
+  ).parentElement;
+  li.remove();
+};
+
+// ? 노트 삭제
+const deleteNote = () => {
+  const index = notes.findIndex((note) => note.id === currentId);
+  notes.splice(index, 1);
+
+  renderRemainedNotes();
+
+  localStorage.setItem('notes', JSON.stringify(notes));
+  checkNumOfNotes();
+};
+
+// ? 메인화면에서 노트 핀 상태 변경 및 렌더링
+const pinNote = (pinBtn) => {
+  const index = notes.findIndex((note) => note.id === currentId);
+  notes[index].pinned = notes[index].pinned ? false : true;
+
+  const li = pinBtn.closest('.note-item');
+  li.remove();
+  if (notes[index].pinned) {
+    noteLists[0].append(li);
+    pinBtn.classList.add('black');
+  } else {
+    noteLists[1].append(li);
+    pinBtn.classList.remove('black');
+  }
+
+  notes = changeOrderOfNotes(notes);
+  localStorage.setItem('notes', JSON.stringify(notes));
+  checkNumOfNotes();
+};
+
+// ? 메인화면에서 노트 배경 색 변경 및 렌더링
+const changeBgColor = (bgBtn) => {
+  const index = notes.findIndex((note) => note.id === currentId);
+  const color = bgBtn.firstElementChild.value;
+
+  notes[index].bgColor = color;
+  localStorage.setItem('notes', JSON.stringify(notes));
+  bgBtn.closest('.note-footer').previousElementSibling.style.backgroundColor =
+    color;
+};
+
 openModalBtn.addEventListener('click', () => {
-  isEditMode = false;
+  changeMode(false);
   openModal();
 });
 modalOverlay.addEventListener('click', closeModal);
+modal.addEventListener('click', (e) => e.stopPropagation());
 closeModalBtn.addEventListener('click', closeModal);
-modal.addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-addNoteBtn.addEventListener('click', (e) => {
-  if (isEditMode) {
-    editNote(e);
-    return;
-  }
+addNoteBtn.addEventListener('click', () => {
+  if (!checkValidityOfInputs()) return;
+  if (isEditMode) return editNote();
   addNote();
+});
+modalPinBtn.addEventListener('click', togglePinBtnInModal);
+modalColorBtn.addEventListener('input', () => {
+  const value = modalColorBtn.firstElementChild.value;
+  setBgColorInModal(value);
+});
+modalDeleteBtn.addEventListener('click', () => {
+  if (!confirmDeletionOfNote()) return;
+  deleteNote();
+  closeModal();
 });
 
 noteLists.forEach((noteList) => {
   noteList.addEventListener('click', (e) => {
     const note = e.target.closest('.note');
     if (!note) return;
-    const id = note.dataset.id;
-    if (e.target.closest('.delete')) return deleteNote(e, id);
+
+    setId(note.dataset.id);
+
+    if (e.target.closest('.delete')) {
+      if (confirmDeletionOfNote()) deleteNote();
+      return;
+    }
     const pinBtn = e.target.closest('.pin');
-    if (pinBtn) return pinNote(pinBtn, id);
+    if (pinBtn) return pinNote(pinBtn);
     if (e.target.closest('.color-select')) return;
-    isEditMode = true;
-    openModal(id);
+
+    changeMode(true);
+    openModal();
+    if (isEditMode) getDataToModal();
   });
 
   noteList.addEventListener('input', (e) => {
     const bgBtn = e.target.closest('.color-select');
     if (bgBtn) {
-      const note = e.target.closest('.note');
-      const id = note.dataset.id;
-      changeBgColor(note, bgBtn, id);
-      return;
+      const note = bgBtn.closest('.note');
+      console.log(note);
+      setId(note.dataset.id);
+      changeBgColor(bgBtn);
     }
   });
-
-  noteList.addEventListener('dragstart', (e) => {
-    const li = e.target.closest('.note-item');
-    if (!li) return;
-    picked = li;
-    pickedIndex = [...noteList.children].indexOf(li);
-  });
-  noteList.addEventListener('dragover', (e) => {
-    e.preventDefault();
-  });
-  noteList.addEventListener('drop', (e) => {
-    const li = e.target.closest('li');
-    if (!li) return;
-    const index = [...noteList.children].indexOf(li);
-    if (index > pickedIndex) {
-      li.after(picked);
-    } else {
-      li.before(picked);
-    }
-  });
-});
-
-modalPinBtn.addEventListener('click', () => {
-  isEditMode ? pinNoteByModal() : pinNoteByModal('new');
-});
-modalDeleteBtn.addEventListener('click', deleteNote);
-modalColorBtn.addEventListener('input', () => {
-  bgColor = modalColorBtn.firstElementChild.value;
-  modalColorBtn.style.backgroundColor = bgColor;
 });
 
 const renderAllNotes = () => {
-  checkNumOfLists();
+  checkNumOfNotes();
   notes.forEach((note) => renderNote(note));
 };
 
