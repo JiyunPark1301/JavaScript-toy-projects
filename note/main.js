@@ -242,11 +242,18 @@ const editNote = () => {
   notes[index].title = title;
   notes[index].content = content;
   notes[index].bgColor = currentBgColor;
-  notes[index].pinned = isPinned;
+
+  if (isPinned && !notes[index].pinned) {
+    notes[index].pinned = true;
+    renderEditedPin();
+  }
+  if (!isPinned && notes[index].pinned) {
+    notes[index].pinned = false;
+    renderEditedPin();
+  }
 
   renderEditedNote(title, content);
   renderEditedColor();
-  renderEditedPin();
 
   notes = changeOrderOfNotes();
   localStorage.setItem('notes', JSON.stringify(notes));
@@ -358,7 +365,6 @@ noteLists.forEach((noteList) => {
     const bgBtn = e.target.closest('.color-select');
     if (bgBtn) {
       const note = bgBtn.closest('.note');
-      console.log(note);
       setId(note.dataset.id);
       changeBgColor(bgBtn);
     }
