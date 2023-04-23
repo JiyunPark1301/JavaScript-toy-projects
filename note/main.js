@@ -30,6 +30,7 @@ let isEditMode = false;
 let currentBgColor = '#fff';
 let isPinned = false;
 let currentId = null;
+let picked = null;
 
 // ? 추가모드와 수정모드일 때 모달 UI 변경
 const changeUIInModal = () => {
@@ -368,6 +369,52 @@ noteLists.forEach((noteList) => {
       setId(note.dataset.id);
       changeBgColor(bgBtn);
     }
+  });
+
+  noteList.addEventListener('dragstart', (e) => {
+    const li = e.target.closest('.note-item');
+    if (!li) return;
+    picked = li;
+    setId(li.children[0].dataset.id);
+  });
+  noteList.addEventListener('dragend', (e) => {
+    const li = e.target.closest('.note-item');
+    if (!li) return;
+    picked = null;
+  });
+  noteList.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    // console.log(picked.getBoundingClientRect().left);
+  });
+  noteList.addEventListener('drop', (e) => {
+    const li = e.target.closest('li');
+    console.log(li.getBoundingClientRect().left);
+
+    if (e.target.closest('.note-container') && !li) {
+      e.currentTarget.appendChild(picked);
+    } else {
+      if (!li) return;
+      if (li.getBoundingClientRect().left < e.clientX) {
+        li.before(picked);
+      } else {
+        li.after(picked);
+      }
+    }
+
+    const index = notes.findIndex((note) => note.id === currentId);
+
+    if (notes[index].pinned && noteList === noteLists[1]) {
+      notes[index].pinned = false;
+      picked.querySelector('.pin').classList.remove('black');
+    } else if (!notes[index].pinned && noteList === noteLists[0]) {
+      notes[index].pinned = true;
+      picked.querySelector('.pin').classList.add('black');
+    }
+
+    notes = changeOrderOfNotes();
+    localStorage.setItem('notes', JSON.stringify(notes));
+
+    checkNumOfNotes();
   });
 });
 
